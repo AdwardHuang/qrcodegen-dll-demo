@@ -1,4 +1,4 @@
-name: Build DLL Demo
+name: Build DLL Demo with MSBuild
 
 on:
   push:
@@ -15,26 +15,29 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install CMake
-      uses: lukka/get-cmake@latest
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
 
-    - name: Configure project
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+    - name: Configure with CMake (generate Visual Studio project)
+      run: cmake -B build -G "Visual Studio 17 2022" -A x64
 
-    - name: Build project
-      run: cmake --build build --config Release
+    - name: Build with MSBuild
+      run: msbuild build/qrcodegen.vcxproj /p:Configuration=Release
+
+    - name: List output
+      run: dir build\\Release
 
     - name: Check DLL existence
       run: |
-        if (!(Test-Path build\Release\qrcodegen.dll)) {
+        if (!(Test-Path build\\Release\\qrcodegen.dll)) {
           throw "DLL not found! Compilation failed or linking skipped."
         }
 
     - name: Package DLL
       run: |
         mkdir artifacts
-        copy build\Release\qrcodegen.dll artifacts\
-        powershell Compress-Archive -Path artifacts\* -DestinationPath qrcodegen_dll.zip
+        copy build\\Release\\qrcodegen.dll artifacts\\
+        powershell Compress-Archive -Path artifacts\\* -DestinationPath qrcodegen_dll.zip
 
     - name: Upload Release
       if: github.event_name == 'release'
